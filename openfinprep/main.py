@@ -17,6 +17,9 @@ def get_args():
         "--debug", default=DEFARGS['DEBUG'], action="store_true", help="Enable debug environment"
     )
     parser.add_argument(
+        "--use-local-storage", default=DEFARGS['USE_LOCAL_STORAGE'], action="store_true", help="Enable local storage use"
+    )
+    parser.add_argument(
         "--url-prefix",
         default=DEFARGS['URL_PREFIX'],
         type=str,
