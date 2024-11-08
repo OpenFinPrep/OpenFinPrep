@@ -1,7 +1,8 @@
-from flask import Blueprint, Flask, render_template, make_response, jsonify, current_app
+import os
+import yaml
+from flask import Blueprint, send_from_directory, Flask, render_template, make_response, jsonify, current_app
 from edgar.reference.tickers import get_company_ticker_name_exchange 
 from edgar import set_identity, use_local_storage
-import yaml
 
 def create_app(args):
     bp = Blueprint('ofp', __name__)
@@ -9,9 +10,10 @@ def create_app(args):
     if args.use_local_storage:
         use_local_storage()
 
+
     @bp.route("/")
     def index():
-        return make_response(render_template("index.html"))
+        return render_template("index.html")
 
     @bp.route("/stock/list")
     def stock_list():
@@ -51,7 +53,7 @@ def create_app(args):
             cik_list,
         ]
 
-        
+
         groups = yaml.safe_load(endpoints.__doc__)
         output = [{'group': g, 'endpoints': []} for g in groups]
 
@@ -67,7 +69,10 @@ def create_app(args):
 
         return jsonify(output)
 
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                static_url_path='', 
+                static_folder=os.path.join(os.path.dirname(__file__), "webapp", "build"),
+                template_folder=os.path.join(os.path.dirname(__file__), "webapp", "build"))
 
     if args.debug:
         app.config["TEMPLATES_AUTO_RELOAD"] = True

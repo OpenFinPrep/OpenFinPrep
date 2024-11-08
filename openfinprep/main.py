@@ -42,7 +42,7 @@ def main():
             args.host = "::"
 
         if args.debug:
-            app.run(host=args.host, port=args.port)
+            app.run(host=args.host, port=args.port, debug=True)
         else:
             from waitress import serve
             print(f"Running on http://{args.host}:{args.port}{args.url_prefix}")
