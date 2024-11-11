@@ -23,7 +23,7 @@ def create_app(args):
         params: []
         tags: 
          - label: Test
-           color: yellow
+           type: info
         """
         companies = get_company_ticker_name_exchange()
         companies = companies.drop(columns=['cik'])

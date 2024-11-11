@@ -1,0 +1,36 @@
+.menu-item{
+    padding-top: 12px;
+    padding-bottom: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dbdbdb99;
+
+    .badge{
+        margin-left: 12px;
+    }
+    
+    i{
+        margin-right: 16px;
+    }
+    .title{
+        margin-left: 16px;
+    }
+
+    &:hover, &:active{
+        cursor: pointer;
+        background-color: #efefef;
+    }
+
+    &.menu-sub-item{
+        font-size: 14px;
+        border-bottom: none;
+        margin-left: 12px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    user-select: none;
+}
