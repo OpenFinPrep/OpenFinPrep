@@ -43,7 +43,7 @@ function App() {
               {ep.endpoints.map(e => 
                 <MenuItem key={e.name} title={e.name} tags={e.tags} onClick={() => setSelectedEp(e)} />)
               }
-            </MenuItem>)};
+            </MenuItem>)}
         </div>
         <div className="main-content">
           {error ? <Alert setError={setError}>{error}</Alert> : ""}

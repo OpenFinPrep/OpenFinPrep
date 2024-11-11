@@ -1,6 +1,14 @@
 .ep-view{
+    overflow-y: hidden;
+    
     .ep-header{
         padding: 6px 12px 0px 12px;
     }
     height: 100%;
+
+    .rdg{
+        border-left: none;
+        border-right: none;
+        height: calc(100vh - 114px);
+    }
 }
