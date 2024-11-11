@@ -2,27 +2,33 @@ import logo from './logo.svg';
 import './App.css';
 import MenuItem from './MenuItem';
 import Alert from './Alert';
+import EpView from './EpView';
 import { useEffect, useState } from 'react';
 
 function App() {
   const [endpoints, setEndpoints] = useState([]);
   const [error, setError] = useState(null);
+  const [selectedEp, setSelectedEp] = useState(null);
 
-  const fetchEndpoints = async () => {
+  const onMount = async () => {
       try {
         const response = await fetch('/endpoints');
         if (!response.ok) {
-          throw new Error(`Cannot load endpoints, status: ${response.status}`);
+          throw new Error(`Cannot load /endpoints, status: ${response.status}`);
         }
-        setEndpoints(await response.json());
+        const eps = await response.json();
+        setEndpoints(eps);
+
+        // Select first by default
+        if (eps[0] && eps[0].endpoints) setSelectedEp(eps[0].endpoints[0]);
       } catch (err) {
         setError(err.message);
       }
   };
 
   useEffect(() => {
-    fetchEndpoints(); // Call the fetch function when the component mounts
-  }, []); // Empty dependency array means this runs once after initial render
+    onMount();
+  }, []);
 
   return (
     <div className="app">
@@ -31,16 +37,17 @@ function App() {
       </header>
 
       <div className="main-container">
-        <div className="ep-menu">
+        <div className="ep-menu col-xs-5 col-sm-4 col-md-3 col-lg-2">
           {endpoints.map(ep => 
             <MenuItem key={ep.group} title={ep.group}>
               {ep.endpoints.map(e => 
-                <MenuItem key={e.name} title={e.name} tags={e.tags} />)
+                <MenuItem key={e.name} title={e.name} tags={e.tags} onClick={() => setSelectedEp(e)} />)
               }
             </MenuItem>)};
         </div>
         <div className="main-content">
           {error ? <Alert setError={setError}>{error}</Alert> : ""}
+          {selectedEp ? <EpView endpoint={selectedEp} setError={setError} /> : ""}
         </div>
       </div>
     </div>
