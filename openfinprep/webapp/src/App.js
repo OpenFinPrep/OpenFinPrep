@@ -37,7 +37,7 @@ function App() {
       </header>
 
       <div className="main-container">
-        <div className="ep-menu col-xs-5 col-sm-4 col-md-3 col-lg-2">
+        <div className="ep-menu col-xs-5 col-sm-5 col-md-4 col-lg-3 col-xl-2">
           {endpoints.map(ep => 
             <MenuItem key={ep.group} title={ep.group}>
               {ep.endpoints.map(e => 

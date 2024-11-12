@@ -1,4 +1,6 @@
 import './EpView.css';
+import InputParam from './InputParam';
+import { keyToColumnLabel } from './Utils';
 import 'react-data-grid/lib/styles.css';
 import { useEffect, useState } from 'react';
 import DataGrid from 'react-data-grid';
@@ -6,11 +8,7 @@ import DataGrid from 'react-data-grid';
 function EpView({ endpoint, setError }){
     const [rows, setRows] = useState([]);
     const [columns, setColumns] = useState([]);
-    
-    const keyToColumnLabel = key => {
-        return key.replace(/_([a-z])/g, (_, letter) => ` ${letter.toUpperCase()}`)
-                     .replace(/^\w/, c => c.toUpperCase());
-    };
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -52,11 +50,18 @@ function EpView({ endpoint, setError }){
 
         fetchData();
     }, [endpoint, setError]);
-    
+
     return (<div className="ep-view">
         <div className="ep-header">
             <h3>{endpoint.name}</h3>
+            <div className="ep-buttons">
+                <button className="btn btn-light"><i className="fa fa-link"></i> URL</button>
+                <button className="btn btn-dark"><i className="fa fa-download"></i> Export as CSV</button>
+            </div>
         </div>
+        {endpoint.params ? <form className="params">
+            {endpoint.params.map(p => <InputParam p={p} />)}
+        </form> : ""}
         <DataGrid columns={columns} rows={rows} />
     </div>)
 }

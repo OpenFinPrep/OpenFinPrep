@@ -15,25 +15,28 @@ def create_app(args):
     def index():
         return render_template("index.html")
 
-    @bp.route("/stock/list")
-    def stock_list():
+    @bp.route("/search")
+    def general_search():
         """
-        name: Symbol List
-        group: Stock List
-        params: []
-        tags: 
-         - label: Test
-           type: info
+        name: General Search
+        group: Company Search
+        params: 
+         - name: query
+           default: AA
+         - name: limit
+           type: number
+         - name: exchange
+        tags: []
         """
         companies = get_company_ticker_name_exchange()
         companies = companies.drop(columns=['cik'])
         return companies.to_json(orient='records')
 
-    @bp.route("/cik_list")
-    def cik_list():
+    @bp.route("/cik_search")
+    def cik_search():
         """
-        name: CIK List
-        group: Stock List
+        name: CIK Search
+        group: Company Search
         params: []
         tags: []
         """
@@ -42,17 +45,29 @@ def create_app(args):
         companies['cik'] = companies['cik'].apply(lambda x: str(x).zfill(10))
         return companies.to_json(orient='records')
 
+    @bp.route("/income-statement")
+    def income_statement():
+        """
+        name: Income Statement
+        group: Financial Statements
+        params: []
+        tags:
+         - label: Annual/Quarter
+           type: info
+        """
+        return [{}]
+
     @bp.route("/endpoints")
     def endpoints():
         """
-         - Stock List
-         - Another group
+         - Company Search
+         - Financial Statements
         """
         ep = [
-            stock_list,
-            cik_list,
+            general_search,
+            cik_search,
+            income_statement,
         ]
-
 
         groups = yaml.safe_load(endpoints.__doc__)
         output = [{'group': g, 'endpoints': []} for g in groups]

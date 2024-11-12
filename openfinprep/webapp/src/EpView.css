@@ -2,13 +2,31 @@
     overflow-y: hidden;
     
     .ep-header{
+        display: flex;
         padding: 6px 12px 0px 12px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
     }
     height: 100%;
+
+    .ep-buttons{
+        button{
+            margin-left: 12px;
+        }
+    }
 
     .rdg{
         border-left: none;
         border-right: none;
-        height: calc(100vh - 114px);
+        height: calc(100vh - 180px);
+    }
+
+    .params{
+        display: flex;
+        padding-left: 12px;
+        padding-right: 12px;
+        margin-bottom: 12px;
+        font-size: 14px;
     }
 }

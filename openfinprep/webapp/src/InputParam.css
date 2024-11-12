@@ -1,0 +1,14 @@
+.input-param{
+    display: flex;
+    align-items: flex-end;
+    input{
+        font-size: 14px;
+        margin-right: 6px;
+        &[type="number"]{
+            width: 100px;
+        }
+    }
+    label{
+        margin-right: 6px;
+    }
+}
