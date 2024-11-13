@@ -1,6 +1,7 @@
 import os
 import yaml
-from flask import Blueprint, send_from_directory, Flask, render_template, make_response, jsonify, current_app
+from flask import Blueprint, send_from_directory, Flask, render_template, make_response, jsonify, current_app, request
+import pandas as pd
 from edgar.reference.tickers import get_company_ticker_name_exchange 
 from edgar import set_identity, use_local_storage
 
@@ -15,6 +16,37 @@ def create_app(args):
     def index():
         return render_template("index.html")
 
+    def filter_by_text(df, param, columns, operator = 'contains'):
+        p = request.args.get(param)
+
+        if p is not None:
+            sel = None
+            for col in columns:
+                if operator == 'contains':
+                    if sel is None:
+                        sel = df[col].str.contains(p, case=False)
+                    else:
+                        sel |= df[col].str.contains(p, case=False)
+                elif operator == 'match':
+                    if sel is None:
+                        sel = df[col] == p
+                    else:
+                        sel |= df[col] == p
+                else:
+                    raise Exception("Invalid operator")
+
+            df = df[sel]
+        return df
+
+    def filter_limit(df):
+        p = request.args.get('limit')
+        if p is not None:
+            try:
+                df = df.head(int(request.args.get('limit')))
+            except ValueError:
+                abort(400, description="Invalid limit")
+        return df
+
     @bp.route("/search")
     def general_search():
         """
@@ -28,9 +60,14 @@ def create_app(args):
          - name: exchange
         tags: []
         """
-        companies = get_company_ticker_name_exchange()
-        companies = companies.drop(columns=['cik'])
-        return companies.to_json(orient='records')
+        df = get_company_ticker_name_exchange()
+        df = df.drop(columns=['cik'])
+
+        df = filter_by_text(df, 'query', ['name', 'ticker'], 'contains')
+        # df = filter_by_text(df, 'exchange', ['exchange'], 'match')
+        df = filter_limit(df)
+
+        return df.to_json(orient='records')
 
     @bp.route("/cik_search")
     def cik_search():
@@ -83,6 +120,19 @@ def create_app(args):
             output[group_id]['endpoints'].append(spec)
 
         return jsonify(output)
+
+    
+    @bp.errorhandler(400)
+    def invalid_api(e):
+        return jsonify({"error": str(e.description)}), 400
+
+    @bp.errorhandler(500)
+    def server_error(e):
+        return jsonify({"error": str(e.description)}), 500
+
+    @bp.errorhandler(403)
+    def denied(e):
+        return jsonify({"error": str(e.description)}), 403
 
     app = Flask(__name__, 
                 static_url_path='', 
