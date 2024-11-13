@@ -19,15 +19,7 @@ def get_args():
     parser.add_argument(
         "--use-local-storage", default=DEFARGS['USE_LOCAL_STORAGE'], action="store_true", help="Enable local storage use"
     )
-    parser.add_argument(
-        "--url-prefix",
-        default=DEFARGS['URL_PREFIX'],
-        type=str,
-        help="Add prefix to URL: example.com:5000/url-prefix/",
-    )
     args = parser.parse_args()
-    if args.url_prefix and not args.url_prefix.startswith('/'):
-        args.url_prefix = '/' + args.url_prefix
     return args
 
 def main():
@@ -45,7 +37,7 @@ def main():
             app.run(host=args.host, port=args.port, debug=True)
         else:
             from waitress import serve
-            print(f"Running on http://{args.host}:{args.port}{args.url_prefix}")
+            print(f"Running on http://{args.host}:{args.port}")
 
             serve(
                 app,

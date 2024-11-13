@@ -91,9 +91,6 @@ def create_app(args):
 
     if args.debug:
         app.config["TEMPLATES_AUTO_RELOAD"] = True
-    if args.url_prefix:
-        app.register_blueprint(bp, url_prefix=args.url_prefix)
-    else:
-        app.register_blueprint(bp)
+    app.register_blueprint(bp, url_prefix="/api")
     
     return app

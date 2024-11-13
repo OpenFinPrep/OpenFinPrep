@@ -12,9 +12,9 @@ function App() {
 
   const onMount = async () => {
       try {
-        const response = await fetch('/endpoints');
+        const response = await fetch('/api/endpoints');
         if (!response.ok) {
-          throw new Error(`Cannot load /endpoints, status: ${response.status}`);
+          throw new Error(`Cannot load /api/endpoints, status: ${response.status}`);
         }
         const eps = await response.json();
         setEndpoints(eps);

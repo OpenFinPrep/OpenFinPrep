@@ -55,12 +55,7 @@ _default_options_objects = [
         'name': 'USE_LOCAL_STORAGE',
         'default_value': False,
         'value_type': 'bool'
-    },
-    {
-        'name': 'URL_PREFIX',
-        'default_value': '',
-        'value_type': 'str'
-    },
+    }
 ]
 
 

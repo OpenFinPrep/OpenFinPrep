@@ -1,6 +1,6 @@
 import './EpView.css';
 import InputParam from './InputParam';
-import { keyToColumnLabel } from './Utils';
+import { keyToColumnLabel, buildUrlWithQuery } from './Utils';
 import 'react-data-grid/lib/styles.css';
 import { useEffect, useState } from 'react';
 import DataGrid from 'react-data-grid';
@@ -8,7 +8,27 @@ import DataGrid from 'react-data-grid';
 function EpView({ endpoint, setError }){
     const [rows, setRows] = useState([]);
     const [columns, setColumns] = useState([]);
+    const [showApply, setShowApply] = useState(false);
 
+    const [ params, setParams ] = useState(Object.assign({}, ...endpoint.params.map(p => ({
+        [p.name]: p['default'] !== undefined ? p['default'] : ''})
+    )));
+
+    const updateParam = (key, value) => {
+        // This doesn't actually trigger any changes
+        // because the params object does not change
+        params[key] = value;
+        setShowApply(true);
+    };
+
+    const applyParams = () => {
+        const newParams = {...params};
+        setParams(newParams);
+    };
+
+    const openUrl = () => {
+        window.open(buildUrlWithQuery(endpoint.url, params), "_blank");
+    }
 
     useEffect(() => {
         const controller = new AbortController();
@@ -17,6 +37,7 @@ function EpView({ endpoint, setError }){
         const fetchData = async () => {
             setColumns([]);
             setRows([]);
+            setShowApply(false);
             
             if (request != null){
                 controller.abort();
@@ -24,7 +45,7 @@ function EpView({ endpoint, setError }){
                 }
                 
             try {
-                request = fetch(endpoint.url, { signal: controller.signal });
+                request = fetch(buildUrlWithQuery(endpoint.url, params), { signal: controller.signal });
                 const response = await request;
                 if (!response.ok) {
                     throw new Error(`Cannot load ${endpoint.url}, status: ${response.status}`);
@@ -49,20 +70,21 @@ function EpView({ endpoint, setError }){
         };
 
         fetchData();
-    }, [endpoint, setError]);
+    }, [endpoint, setError, params, setShowApply]);
 
     return (<div className="ep-view">
         <div className="ep-header">
             <h3>{endpoint.name}</h3>
             <div className="ep-buttons">
-                <button className="btn btn-light"><i className="fa fa-link"></i> URL</button>
+                {showApply ? <button onClick={applyParams} className="btn btn-primary"><i className="fa fa-check"></i> Apply</button> : ""}
+                <button onClick={openUrl} className="btn btn-light"><i className="fa fa-link"></i> URL</button>
                 <button className="btn btn-dark"><i className="fa fa-download"></i> Export as CSV</button>
             </div>
         </div>
         {endpoint.params ? <form className="params">
-            {endpoint.params.map(p => <InputParam p={p} />)}
+            {endpoint.params.map(p => <InputParam key={p.name} p={p} updateParam={updateParam} onEnter={applyParams} />)}
         </form> : ""}
-        <DataGrid columns={columns} rows={rows} />
+        <DataGrid className="rdg-light" columns={columns} rows={rows} />
     </div>)
 }
 
