@@ -68,13 +68,20 @@ def create_app(args):
         """
         name: CIK Search
         group: Company Search
-        params: []
+        params:
+         - name: cik
+           default: 0001067983
         tags: []
         """
-        companies = get_company_ticker_name_exchange()
-        companies = companies.drop(columns=['ticker', 'exchange'])
-        companies['cik'] = companies['cik'].apply(lambda x: str(x).zfill(10))
-        return companies.to_json(orient='records')
+        df = get_company_ticker_name_exchange()
+        df = df.drop(columns=['ticker', 'exchange'])
+        df['cik'] = df['cik'].apply(lambda x: str(x).zfill(10))
+
+        df = filter_by_text(df, 'cik', ['cik'], 'match')
+
+        df.drop_duplicates(inplace=True)
+
+        return df.to_json(orient='records')
 
     @bp.route("/income-statement")
     def income_statement():

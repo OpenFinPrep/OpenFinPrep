@@ -10,9 +10,7 @@ function EpView({ endpoint, setError }){
     const [columns, setColumns] = useState([]);
     const [showApply, setShowApply] = useState(false);
 
-    const [ params, setParams ] = useState(Object.assign({}, ...endpoint.params.map(p => ({
-        [p.name]: p['default'] !== undefined ? p['default'] : ''})
-    )));
+    const [ params, setParams ] = useState({});
 
     const updateParam = (key, value) => {
         // This doesn't actually trigger any changes
@@ -70,7 +68,13 @@ function EpView({ endpoint, setError }){
         };
 
         fetchData();
-    }, [endpoint, setError, params, setShowApply]);
+    }, [setError, params, setShowApply, endpoint.url]);
+
+    useEffect(() => {
+        setParams(Object.assign({}, ...endpoint.params.map(p => ({
+            [p.name]: p['default'] !== undefined ? p['default'] : ''})
+        )));
+    }, [endpoint]);
 
     return (<div className="ep-view">
         <div className="ep-header">
@@ -81,9 +85,9 @@ function EpView({ endpoint, setError }){
                 <button className="btn btn-dark"><i className="fa fa-download"></i> Export as CSV</button>
             </div>
         </div>
-        {endpoint.params ? <form className="params">
+        {endpoint.params ? <div className="params">
             {endpoint.params.map(p => <InputParam key={p.name} p={p} updateParam={updateParam} onEnter={applyParams} />)}
-        </form> : ""}
+        </div> : ""}
         <DataGrid className="rdg-light" columns={columns} rows={rows} />
     </div>)
 }
