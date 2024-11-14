@@ -20,18 +20,12 @@ def create_app(args):
         p = request.args.get(param)
 
         if p is not None:
-            sel = None
+            sel = pd.Series(len(df) * [False], index=df.index)
             for col in columns:
                 if operator == 'contains':
-                    if sel is None:
-                        sel = df[col].str.contains(p, case=False)
-                    else:
-                        sel |= df[col].str.contains(p, case=False)
+                    sel |= df[col].str.contains(p, case=False)
                 elif operator == 'match':
-                    if sel is None:
-                        sel = df[col] == p
-                    else:
-                        sel |= df[col] == p
+                    sel |= df[col].str.lower() == p.lower()
                 else:
                     raise Exception("Invalid operator")
 
@@ -64,7 +58,7 @@ def create_app(args):
         df = df.drop(columns=['cik'])
 
         df = filter_by_text(df, 'query', ['name', 'ticker'], 'contains')
-        # df = filter_by_text(df, 'exchange', ['exchange'], 'match')
+        df = filter_by_text(df, 'exchange', ['exchange'], 'match')
         df = filter_limit(df)
 
         return df.to_json(orient='records')
