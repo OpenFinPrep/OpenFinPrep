@@ -16,4 +16,13 @@ function buildUrlWithQuery(url, params){
     return (url.indexOf("?") !== -1 ? url.slice(0, url.indexOf("?")) : url) + toSearchQuery(params);
 }
 
-export { keyToColumnLabel, toSearchQuery, buildUrlWithQuery };
+function downloadFile(filename, data) {
+    const link = document.createElement('a');
+    link.download = filename;
+    const url = URL.createObjectURL(data);
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+export { keyToColumnLabel, toSearchQuery, buildUrlWithQuery, downloadFile };
