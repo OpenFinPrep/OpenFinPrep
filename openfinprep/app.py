@@ -3,7 +3,7 @@ import yaml
 from flask import Blueprint, send_from_directory, Flask, render_template, make_response, jsonify, current_app, request
 import pandas as pd
 from edgar.reference.tickers import get_company_ticker_name_exchange 
-from edgar import set_identity, use_local_storage
+from edgar import set_identity, use_local_storage, Company
 
 def create_app(args):
     bp = Blueprint('ofp', __name__)
@@ -83,17 +83,57 @@ def create_app(args):
 
         return df.to_json(orient='records')
 
-    @bp.route("/income-statement")
-    def income_statement():
+    @bp.route("/income-statement/<symbol>")
+    def income_statement(symbol):
         """
         name: Income Statement
         group: Financial Statements
-        params: []
+        params:
+         - name: symbol
+           default: AAPL
+           location: url
+         - name: period
+           default: annual
+           type: enum
+           domain: 
+            - annual
+            - quarter
+         - name: limit
+           type: number
+           default: 4
         tags:
          - label: Annual/Quarter
            type: info
         """
-        return [{}]
+        company = Company(symbol)
+        if company is None:
+            abort(400, description("Company not found"))
+        
+        form = ["10-K"]
+        if request.args.get('period') == 'quarter':
+            form.append("10-Q")
+        
+        result = []
+        filings = company.get_filings(form=form)
+
+        try:
+            limit = int(request.args.get('limit', -1))
+        except ValueError:
+            abort(400, description="Invalid limit")
+        if limit > 0:
+            filings = filings.latest(limit)
+
+        for file in filings:
+            stmt = file.obj().financials.get_income_statement().get_dataframe()
+            current_year = stmt[stmt.columns[0]]
+
+            result.append({
+                'fillingDate': str(file.filing_date),
+                'cik': str(file.cik).zfill(10),
+                'revenue': int(current_year['Net sales'])
+                
+            })
+        return result
 
     @bp.route("/endpoints")
     def endpoints():
@@ -117,7 +157,11 @@ def create_app(args):
             spec = yaml.safe_load(e.__doc__)
             group_id = groups.index(spec['group'])
             del spec['group']
-            spec['url'] = urls.build("ofp." + e.__name__, {})
+            params = {}
+            for p in spec.get('params', []):
+                if p.get('location') == 'url':
+                    params[p['name']] = ':' + p['name']
+            spec['url'] = urls.build("ofp." + e.__name__, params)
             output[group_id]['endpoints'].append(spec)
 
         return jsonify(output)

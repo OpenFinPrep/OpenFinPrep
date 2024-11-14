@@ -8,6 +8,7 @@ import DataGrid from 'react-data-grid';
 function EpView({ endpoint, setError }){
     const [rows, setRows] = useState([]);
     const [columns, setColumns] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showApply, setShowApply] = useState(false);
     const [params, setParams] = useState(Object.assign({},...endpoint.params.map(p => ({
         [p.name]: p['default'] !== undefined ? p['default'] : ''})
@@ -66,12 +67,32 @@ function EpView({ endpoint, setError }){
 
     useEffect(() => {
         if (prevEndpoint.current !== endpoint){
+            // Switched endpoint, recreate params object
+
             setParams(Object.assign({},...endpoint.params.map(p => ({
                 [p.name]: p['default'] !== undefined ? p['default'] : ''})
             )));
             prevEndpoint.current = endpoint;
         }else{
-            setUrl(buildUrlWithQuery(endpoint.url, params));
+
+            // Update URL
+
+            const urlParams = {};
+            const queryParams = {};
+            endpoint.params.forEach(p => {
+                if (params[p.name] !== undefined && params[p.name] !== ''){
+                    if (p.location === 'url'){
+                        urlParams[p.name] = params[p.name];
+                    }else{
+                        queryParams[p.name] = params[p.name];
+                    }
+                }
+            });
+            let url = endpoint.url;
+            for (let p in urlParams){
+                url = url.replace(":" + p, urlParams[p]);
+            }
+            setUrl(buildUrlWithQuery(url, queryParams));
         }
     }, [endpoint, setParams, params]);
 
@@ -79,16 +100,18 @@ function EpView({ endpoint, setError }){
         if (!url) return;
         const controller = new AbortController();
         let request = null;
-
+        
         const fetchData = async () => {
+            setLoading(true);
             setColumns([]);
             setRows([]);
             setShowApply(false);
+            setError("");
             
             if (request != null){
                 controller.abort();
                 request = null;
-                }
+            }
                 
             try {
                 request = fetch(url, { signal: controller.signal });
@@ -112,11 +135,12 @@ function EpView({ endpoint, setError }){
                 setError(err.message);
             } finally {
                 request = null;
+                setLoading(false);
             }
         };
 
         fetchData();
-    }, [setError, url]);
+    }, [setError, url, setLoading]);
 
     return (<div className="ep-view">
         <div className="ep-header">
@@ -128,9 +152,11 @@ function EpView({ endpoint, setError }){
             </div>
         </div>
         {endpoint.params ? <div className="params">
-            {endpoint.params.map(p => <InputParam key={p.name} p={p} updateParam={updateParam} onEnter={applyParams} />)}
+            {endpoint.params.map(p => <InputParam key={endpoint.url + p.name} p={p} updateParam={updateParam} onEnter={applyParams} />)}
         </div> : ""}
-        <DataGrid ref={dataGrid} className="rdg-light" columns={columns} rows={rows} />
+        {loading ? <div className="text-center"><i className="fa fa-spin fa-circle-notch"></i></div>
+        : <DataGrid ref={dataGrid} className="rdg-light" columns={columns} rows={rows} />}
+
     </div>)
 }
 
