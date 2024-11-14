@@ -4,6 +4,7 @@ from flask import Blueprint, send_from_directory, Flask, render_template, make_r
 import pandas as pd
 from edgar.reference.tickers import get_company_ticker_name_exchange 
 from edgar import set_identity, use_local_storage, Company
+from openfinprep.financials import file_period_to_json
 
 def create_app(args):
     bp = Blueprint('ofp', __name__)
@@ -109,9 +110,9 @@ def create_app(args):
         if company is None:
             abort(400, description("Company not found"))
         
-        form = ["10-K"]
+        form = "10-K"
         if request.args.get('period') == 'quarter':
-            form.append("10-Q")
+            form = "10-Q"
         
         result = []
         filings = company.get_filings(form=form)
@@ -120,19 +121,17 @@ def create_app(args):
             limit = int(request.args.get('limit', -1))
         except ValueError:
             abort(400, description="Invalid limit")
-        if limit > 0:
+        
+        if limit == 1:
+            filings = [filings.latest(1)]
+        elif limit > 0:
             filings = filings.latest(limit)
 
         for file in filings:
             stmt = file.obj().financials.get_income_statement().get_dataframe()
-            current_year = stmt[stmt.columns[0]]
+            current_period = stmt[stmt.columns[0]]
 
-            result.append({
-                'fillingDate': str(file.filing_date),
-                'cik': str(file.cik).zfill(10),
-                'revenue': int(current_year['Net sales'])
-                
-            })
+            result.append(file_period_to_json(file, current_period))
         return result
 
     @bp.route("/endpoints")

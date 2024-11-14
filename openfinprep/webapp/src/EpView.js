@@ -122,11 +122,21 @@ function EpView({ endpoint, setError }){
                 const rows = await response.json()
                 let columns = [];
                 if (rows.length > 0){
-                    columns = Object.keys(rows[0]).map(k => { 
-                        return {
+                    let row = rows[0];
+                    columns = Object.keys(row).map(k => { 
+                        let cell = {
                             key: k, 
                             name: keyToColumnLabel(k)
-                        }
+                        };
+                        
+                        // Format numbers
+                        // if (typeof row[k] === 'number'){
+                        //     cell.formatter = function({ row }){
+                        //         return row[k].toLocaleString();
+                        //     };
+                        // }
+
+                        return cell;
                     });
                 }
                 setRows(rows);

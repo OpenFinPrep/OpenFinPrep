@@ -1,6 +1,7 @@
 function keyToColumnLabel(key){
     return key.replace(/_([a-z])/g, (_, letter) => ` ${letter.toUpperCase()}`)
-                    .replace(/^\w/, c => c.toUpperCase());
+                    .replace(/^\w/, c => c.toUpperCase())
+                    .replace(/(.)([A-Z])/g, "$1 $2");
 };
 
 function toSearchQuery(params){

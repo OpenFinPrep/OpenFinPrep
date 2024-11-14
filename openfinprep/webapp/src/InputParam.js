@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 function InputParam({ p, updateParam, onEnter }){
     const [ value, setValue ] = useState(p['default'] !== undefined ? p['default'] : "");
-    console.log(p['default'], value);
 
     const onChange = e => {
         setValue(e.target.value);
