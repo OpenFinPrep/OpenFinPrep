@@ -128,10 +128,7 @@ def create_app(args):
             filings = filings.latest(limit)
 
         for file in filings:
-            stmt = file.obj().financials.get_income_statement().get_dataframe()
-            current_period = stmt[stmt.columns[0]]
-
-            result.append(file_period_to_json(file, current_period))
+            result.append(file_period_to_json(file))
         return result
 
     @bp.route("/endpoints")
