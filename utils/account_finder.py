@@ -7,10 +7,13 @@ parser = argparse.ArgumentParser(
     description="Find accounts"
 )
 parser.add_argument(
-    "amount", type=int, help="Amount to find"
+    "amount", type=float, help="Amount to find"
 )
 parser.add_argument(
     "--file", type=str, help="File with transactions (%(default)s)", default=""
+)
+parser.add_argument(
+    '--depth', type=int, help="Depth of search (%(default)s)", default=4
 )
 
 args = parser.parse_args()
@@ -24,7 +27,7 @@ def find_missing_amount(transactions, target):
             result.append(list(current_combination))
             return
 
-        if len(current_combination) > 4:
+        if len(current_combination) > args.depth:
             return
 
         # Explore all options

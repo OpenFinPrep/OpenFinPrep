@@ -2,6 +2,11 @@ import math
 
 def file_period_to_json(file):
     financials = file.obj().financials
+    xinst = financials.xbrl_data.instance
+
+    # To find keys in xinst:
+    # xinst.facts.index.get_level_values('concept')[xinst.facts.index.get_level_values('concept').str.contains("Interest")]
+
     stmt = financials.get_income_statement().data
     stmt.to_csv("gaap.csv")
     level_0 = stmt[stmt['level'] == 0]
@@ -27,30 +32,61 @@ def file_period_to_json(file):
         if not math.isnan(item):
             period[concept] += item
 
-    def get_attr(keys, cast = int):
+    def get_attr(keys, cast = int, fallback=None):
+        if isinstance(keys, str):
+            keys = [keys]
+        
         for k in keys:
             if k in period:
-                return cast(period[k]) 
+                return cast(period[k])
+        if fallback is not None:
+            return cast(query_attr(fallback))
+        
+        return 0
+
+    def query_attr(keys, cast = int):
+        if isinstance(keys, str):
+            keys = [keys]
+
+        for k in keys:
+            k = k.replace("_", ":")
+            df = xinst.facts[xinst.facts.index.get_level_values('concept') == k]
+            if len(df) > 0:
+                return df['value'].iloc[0]
+
         return 0
 
     def abs_int(v):
         return abs(int(v))
+
 
     r = {
         'fillingDate': str(file.filing_date),
         'cik': str(file.cik).zfill(10),
         'period': financials.xbrl_data.instance.get_fiscal_period_focus(),
         'revenue': get_attr(['us-gaap_Revenues', 'us-gaap_RevenueFromContractWithCustomerExcludingAssessedTax'], abs_int),
-        'costOfRevenue': get_attr(['us-gaap_CostOfGoodsAndServicesSold'], abs_int),
-        'grossProfit': get_attr(['us-gaap_GrossProfit']),
-        'researchAndDevelopmentExpenses': get_attr(['us-gaap_ResearchAndDevelopmentExpense'], abs_int),
-        'generalAndAdministrativeExpenses': get_attr(['us-gaap_GeneralAndAdministrativeExpense'], abs_int),
-        'sellingAndMarketingExpenses': get_attr(['us-gaap_SellingAndMarketingExpense'], abs_int),
-        'sellingGeneralAndAdministrativeExpenses': get_attr(['us-gaap_SellingGeneralAndAdministrativeExpense'], abs_int),
+        'costOfRevenue': get_attr('us-gaap_CostOfGoodsAndServicesSold', abs_int),
+        'grossProfit': get_attr('us-gaap_GrossProfit'),
+        'researchAndDevelopmentExpenses': get_attr('us-gaap_ResearchAndDevelopmentExpense', abs_int),
+        'generalAndAdministrativeExpenses': get_attr('us-gaap_GeneralAndAdministrativeExpense', abs_int),
+        'sellingAndMarketingExpenses': get_attr('us-gaap_SellingAndMarketingExpense', abs_int),
+        'sellingGeneralAndAdministrativeExpenses': get_attr('us-gaap_SellingGeneralAndAdministrativeExpense', abs_int),
         'otherExpenses': 0,
-        'totalOtherIncomeExpensesNet': get_attr(['us-gaap_NonoperatingIncomeExpense']),
-        'operatingIncome': get_attr(['us-gaap_OperatingIncomeLoss']),
-        'incomeBeforeTax': get_attr(['us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'])
+        'totalOtherIncomeExpensesNet': get_attr('us-gaap_NonoperatingIncomeExpense'),
+        'operatingIncome': get_attr('us-gaap_OperatingIncomeLoss'),
+        'incomeBeforeTax': get_attr('us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'),
+        'netIncome': get_attr('us-gaap_NetIncomeLoss'),
+        'eps': get_attr('us-gaap_EarningsPerShareBasic', float),
+        'epsdiluted': get_attr('us-gaap_EarningsPerShareDiluted', float),
+        'weightedAverageShsOut': get_attr('us-gaap_WeightedAverageNumberOfSharesOutstandingBasic'),
+        'weightedAverageShsOutDil': get_attr('us-gaap_WeightedAverageNumberOfDilutedSharesOutstanding'),
+        'incomeTaxExpense': 0,
+        'operatingExpenses': 0,
+        'costAndExpenses': 0,
+        'interestExpense': get_attr([], int, fallback='us-gaap_InterestExpense'),
+        'interestIncome': get_attr([], int, fallback='us-gaap_InvestmentIncomeNet'),
+        
+        # 'depreciationAndAmortization': get_attr(['us-gaap_DepreciationDepletionAndAmortization'], int, fallback=['DepreciationAmortizationAndOther']),
     }
 
     def compute_sub(key, v1, v2):
@@ -73,11 +109,14 @@ def file_period_to_json(file):
 
     compute_expr('grossProfit', 'revenue - costOfRevenue')
     compute_expr('sellingGeneralAndAdministrativeExpenses', 'sellingAndMarketingExpenses + generalAndAdministrativeExpenses')
-    # compute_expr('otherExpenses', 'grossProfit - sellingAndMarketingExpenses - generalAndAdministrativeExpenses')
-    
+    compute_expr('incomeTaxExpense', 'incomeBeforeTax - netIncome')
+    compute_expr('operatingExpenses', 'grossProfit - operatingIncome')
+    compute_expr('costAndExpenses', 'revenue - operatingIncome')
+
     compute_ratio('grossProfitRatio', 'grossProfit', 'revenue')
     compute_ratio('operatingIncomeRatio', 'operatingIncome', 'revenue')
     compute_ratio('incomeBeforeTaxRatio', 'incomeBeforeTax', 'revenue')
+    compute_ratio('netIncomeRatio', 'netIncome', 'revenue')
     
 
     # Compute additional ratios
