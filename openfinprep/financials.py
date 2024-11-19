@@ -36,9 +36,6 @@ def file_period_to_json(file):
     def abs_int(v):
         return abs(int(v))
 
-
-    #TODO: totalOtherIncomeExpensesNet for DIS incorrect?
-    
     r = {
         'fillingDate': str(file.filing_date),
         'cik': str(file.cik).zfill(10),
@@ -50,8 +47,10 @@ def file_period_to_json(file):
         'generalAndAdministrativeExpenses': get_attr(['us-gaap_GeneralAndAdministrativeExpense'], abs_int),
         'sellingAndMarketingExpenses': get_attr(['us-gaap_SellingAndMarketingExpense'], abs_int),
         'sellingGeneralAndAdministrativeExpenses': get_attr(['us-gaap_SellingGeneralAndAdministrativeExpense'], abs_int),
-        'totalOtherIncomeExpensesNet': get_attr(['us-gaap_NonoperatingIncomeExpense'])
-        
+        'otherExpenses': 0,
+        'totalOtherIncomeExpensesNet': get_attr(['us-gaap_NonoperatingIncomeExpense']),
+        'operatingIncome': get_attr(['us-gaap_OperatingIncomeLoss']),
+        'incomeBeforeTax': get_attr(['us-gaap_IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'])
     }
 
     def compute_sub(key, v1, v2):
@@ -62,15 +61,24 @@ def file_period_to_json(file):
         if r[key] == 0 and r[v1] > 0 and r[v2] > 0:
             r[key] = r[v1] + r[v2]
 
+    def compute_expr(key, expr):
+        if r[key] == 0:
+            r[key] = eval(expr, None, r)
+
     def compute_ratio(key, v1, v2):
         if v1 in r and r[v2] != 0:
             r[key] = r[v1] / r[v2]
         else:
             r[key] = 0
 
-    compute_sub('grossProfit', 'revenue', 'costOfRevenue')
-    compute_add('sellingGeneralAndAdministrativeExpenses', 'sellingAndMarketingExpenses', 'generalAndAdministrativeExpenses')
+    compute_expr('grossProfit', 'revenue - costOfRevenue')
+    compute_expr('sellingGeneralAndAdministrativeExpenses', 'sellingAndMarketingExpenses + generalAndAdministrativeExpenses')
+    # compute_expr('otherExpenses', 'grossProfit - sellingAndMarketingExpenses - generalAndAdministrativeExpenses')
+    
     compute_ratio('grossProfitRatio', 'grossProfit', 'revenue')
+    compute_ratio('operatingIncomeRatio', 'operatingIncome', 'revenue')
+    compute_ratio('incomeBeforeTaxRatio', 'incomeBeforeTax', 'revenue')
+    
 
     # Compute additional ratios
     # if r['revenue']:
