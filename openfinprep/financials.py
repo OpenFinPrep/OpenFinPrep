@@ -50,9 +50,9 @@ def file_period_to_json(file):
 
         for k in keys:
             k = k.replace("_", ":")
-            df = xinst.facts[xinst.facts.index.get_level_values('concept') == k]
+            df = xinst.facts[xinst.facts.index.get_level_values('concept').str.endswith(k)]
             if len(df) > 0:
-                return df['value'].iloc[0]
+                return cast(df['value'].iloc[0])
 
         return 0
 
@@ -85,8 +85,8 @@ def file_period_to_json(file):
         'costAndExpenses': 0,
         'interestExpense': get_attr([], int, fallback='us-gaap_InterestExpense'),
         'interestIncome': get_attr([], int, fallback='us-gaap_InvestmentIncomeNet'),
-        
-        # 'depreciationAndAmortization': get_attr(['us-gaap_DepreciationDepletionAndAmortization'], int, fallback=['DepreciationAmortizationAndOther']),
+        'depreciationAndAmortization': query_attr(['us-gaap_DepreciationDepletionAndAmortization', 'DepreciationAmortizationAndOther'], int),
+        'ebidta': 0,
     }
 
     def compute_sub(key, v1, v2):
@@ -112,11 +112,13 @@ def file_period_to_json(file):
     compute_expr('incomeTaxExpense', 'incomeBeforeTax - netIncome')
     compute_expr('operatingExpenses', 'grossProfit - operatingIncome')
     compute_expr('costAndExpenses', 'revenue - operatingIncome')
+    compute_expr('ebidta', 'operatingIncome + depreciationAndAmortization')
 
     compute_ratio('grossProfitRatio', 'grossProfit', 'revenue')
     compute_ratio('operatingIncomeRatio', 'operatingIncome', 'revenue')
     compute_ratio('incomeBeforeTaxRatio', 'incomeBeforeTax', 'revenue')
     compute_ratio('netIncomeRatio', 'netIncome', 'revenue')
+    compute_ratio('ebitdaratio', 'ebidta', 'revenue')
     
 
     # Compute additional ratios
